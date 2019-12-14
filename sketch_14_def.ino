@@ -5,12 +5,14 @@
 #include <DallasTemperature.h>
 #include <SoftwareSerial.h>
  int ID=0;
-// 定义DS18B20数据口连接arduino的2号IO上
+
+// 定义DS18B20数据口连接arduino的3号IO上
 #define ONE_WIRE_BUS 3
+
 // 初始连接在单总线上的单总线设备
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-  SoftwareSerial mySerial(10, 11); // RX, TX
+  SoftwareSerial mySerial(10, 11); // RX, TX ESP8266就连在这个上面
 
 void setup(void)
 {
@@ -19,6 +21,7 @@ void setup(void)
   Serial.println("Dallas Temperature IC Control Library Demo");
  mySerial.begin(9600);
 
+ //控制ESP8266
  mySerial.println("AT+CWMODE=2"); 
  delay(500); 
   mySerial.println("AT+RST"); 
