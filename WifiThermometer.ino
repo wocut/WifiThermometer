@@ -60,12 +60,12 @@ void loop(void)
   String ID=IDa+IDb+IDc;
 
   second++;
-  if (second>=60p[[ )
+  if (second>=60p)
     {
       second=0;
       minute++;
     }
-  if (minute>=10)
+  if (minute>=2)    //定时2分钟
     {
       timeflag=1;
       minute=0;
