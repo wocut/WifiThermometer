@@ -43,19 +43,22 @@ void loop(void)
   String IDa ="AT+CWSAP_DEF=\"";
   int IDb;
 
-  if (abs(RealTemp-MenberTemp)>1)    //如果温度比之前相差超过2度
-      {
-       IDb=RealTemp;       //更新温度
-       MenberTemp=RealTemp;//更新临时记录的温度
-       send=1;        //启动wifi名称更新程序   
-       
-      }
-  else
-      {
-        IDb=MenberTemp;
-        //send=0;        //关闭wifi名称更新程序
-        send=1;        //临时试验新UNO
-      }
+//     if (abs(RealTemp-MenberTemp)>1)    //如果温度比之前相差超过2度
+//      {
+//       IDb=RealTemp;       //更新温度
+//       MenberTemp=RealTemp;//更新临时记录的温度
+//       send=1;        //启动wifi名称更新程序   
+//       
+//      }
+//  else
+//      {
+//        IDb=MenberTemp;
+//        //send=0;        //关闭wifi名称更新程序
+//        send=1;        //临时试验新UNO
+//      }
+// 
+ 
+ send=1;        //临时试验新UNO
 
   String IDc ="c\",\"12K456u8\",11,3";
   //String IDc ="c\"";
