@@ -47,25 +47,27 @@ void loop(void)
       {
        IDb=RealTemp;       //更新温度
        MenberTemp=RealTemp;//更新临时记录的温度
-       send=1;        //启动wifi名称更新程序
+       send=1;        //启动wifi名称更新程序   
+       
       }
   else
       {
         IDb=MenberTemp;
-        send=0;        //关闭wifi名称更新程序
+        //send=0;        //关闭wifi名称更新程序
+        send=1;        //临时试验新UNO
       }
 
   String IDc ="c\",\"12K456u8\",11,3";
   //String IDc ="c\"";
-  String ID=IDa+IDb+IDc;
-
+  //String ID=IDa+IDb+IDc;
+   String ID="AT+CWSAP_DEF=\"baidc\",\"12K456u8\",11,3";   //临时试验新UNO
   second++;
-  if (second>=60p)
+  if (second>=6)
     {
       second=0;
       minute++;
     }
-  if (minute>=2)    //定时2分钟
+  if (minute>=1)    //定时2分钟
     {
       timeflag=1;
       minute=0;
