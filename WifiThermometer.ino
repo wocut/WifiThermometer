@@ -40,7 +40,7 @@ void loop(void)
 
    sensors.requestTemperatures(); // 发送命令获取温度
    float RealTemp=sensors.getTempCByIndex(0);
-  String IDa ="AT+CWSAP_DEF=\"";
+  String IDa ="AT+ CWSAP=\"";
   int IDb;
 
   if (abs(RealTemp-MenberTemp)>1)    //如果温度比之前相差超过2度
@@ -59,8 +59,8 @@ void loop(void)
 
   String IDc ="c\",\"12K456u8\",11,3";
   //String IDc ="c\"";
-  //String ID=IDa+IDb+IDc;
-   String ID="AT+CWSAP_DEF=\"baidc\",\"12K456u8\",11,3";   //临时试验新UNO
+  String ID=IDa+IDb+IDc;
+   //String ID="AT+CWSAP=\"baidc\",\"12K456u8\",11,3";   //临时试验新UNO
   second++;
   if (second>=6)
     {
@@ -76,8 +76,10 @@ void loop(void)
   if ((send&&timeflag)==1)                    //判断
   {
       mySerial.println(ID);     //wifi名称更新程序
-
-      //delay(1000);
+      
+      delay(1000);
+      mySerial.println("AT+RST");     //重启
+      delay(1000);
       send=0;              //关闭wifi名称更新程序
       timeflag=0; 
       //Serial.println(ID);
