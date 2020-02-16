@@ -1,116 +1,153 @@
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+ 
+#include "aliyun_mqtt.h"
+ 
+// GPIO 13, D7 on the Node MCU v3
+#define SENSOR_PIN 13
+ 
+#define WIFI_SSID        "Y"//替换自己的WIFI
+#define WIFI_PASSWD      "123!@#qweASD."//替换自己的WIFI
 
-
-//12,OK,print加ln可以通过
-//13  取自然数
-//14  定义函数
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <SoftwareSerial.h>
- //int ID=0;
-int second=0,minute=0; 
-  bool send=1;
-  bool timeflag=1;
-  
-// 定义DS18B20数据口连接arduino的3号IO上
-#define ONE_WIRE_BUS 3
-
-// 初始连接在单总线上的单总线设备
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-  SoftwareSerial mySerial(10, 11); // RX, TX ESP8266就连在这个上面
-
-void setup(void)
+/*
+ * 
+ {
+  "ProductKey": "a1hd3xqyKOS",
+  "DeviceName": "water",
+  "DeviceSecret": "mSfhWRZW19ZjMAs2YJObURKPU9AUwnTl"
+}
+ */
+#define PRODUCT_KEY      "a1hd3xqyKOS" //替换自己的PRODUCT_KEY
+#define DEVICE_NAME      "water" //替换自己的DEVICE_NAME
+#define DEVICE_SECRET    "mSfhWRZW19ZjMAs2YJObURKPU9AUwnTl"//替换自己的DEVICE_SECRET
+ 
+ 
+#define DEV_VERSION       "S-TH-WIFI-v1.0-20190220"        //固件版本信息
+ 
+#define ALINK_BODY_FORMAT         "{\"id\":\"123\",\"version\":\"1.0\",\"method\":\"%s\",\"params\":%s}"
+#define ALINK_TOPIC_PROP_POST     "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/event/property/post"
+#define ALINK_TOPIC_PROP_POSTRSP  "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/event/property/post_reply"
+#define ALINK_TOPIC_PROP_SET      "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/service/property/set"
+#define ALINK_METHOD_PROP_POST    "thing.event.property.post"
+#define ALINK_TOPIC_DEV_INFO      "/ota/device/inform/" PRODUCT_KEY "/" DEVICE_NAME ""    
+#define ALINK_VERSION_FROMA      "{\"id\": 123,\"params\": {\"version\": \"%s\"}}"
+unsigned long lastMs = 0;
+ 
+WiFiClient   espClient;
+PubSubClient mqttClient(espClient);
+ 
+void init_wifi(const char *ssid, const char *password)
 {
-  // 设置串口通信波特率
-  Serial.begin(9600);
-  //Serial.println("Dallas Temperature IC Control Library Demo");
-  //Serial.println(mySerial.read());
-  
- mySerial.begin(9600);//因单片机无法支持115200
-                      //需要将esp8266的波特率改为9600
-                      //发送AT指令AT+CIOBAUD=9600 若成功则返回ok，否则返回error
- //控制ESP8266
- mySerial.println("AT+CWMODE=2"); 
- delay(500); 
-  mySerial.println("AT+RST"); 
-  delay(500);
-  sensors.begin(); // 初始库
-  }
-    int MenberTemp=-100;
-void loop(void)
-{ 
-
-   sensors.requestTemperatures(); // 发送命令获取温度
-   float RealTemp=sensors.getTempCByIndex(0);
-  String IDa ="AT+CWSAP=\"";
-  int IDb;
-
-  if (abs(RealTemp-MenberTemp)>1)    //如果温度比之前相差超过2度
-      {
-       IDb=RealTemp;       //更新温度
-       MenberTemp=RealTemp;//更新临时记录的温度
-       send=1;        //启动wifi名称更新程序   
-       
-      }
-  else
-      {
-        IDb=MenberTemp;
-        //send=0;        //关闭wifi名称更新程序
-        //send=1;        //临时试验新UNO
-      }
-
-  String IDc ="c\",\"12312312\",11,0";
-  //String IDc ="c\"";
-  String ID=IDa+IDb+IDc;
-   //String ID="AT+CWSAP=\"baidc\",\"12K456u8\",11,3";   //临时试验新UNO
-  second++;
-  if (second>=60)
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED)
     {
-      second=0;
-      minute++;
+        Serial.println("WiFi does not connect, try again ...");
+        delay(500);
     }
-  if (minute>2)    //定时2分钟
+ 
+    Serial.println("Wifi is connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+}
+ 
+void mqtt_callback(char *topic, byte *payload, unsigned int length)
+{
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    payload[length] = '\0';
+    Serial.println((char *)payload);
+ 
+    if (strstr(topic, ALINK_TOPIC_PROP_SET))
     {
-      timeflag=1;
-      minute=0;
+        StaticJsonBuffer<100> jsonBuffer;
+        JsonObject &root = jsonBuffer.parseObject(payload);
+        if (!root.success())
+        {
+            Serial.println("parseObject() failed");
+            return;
+        }
     }
-
-  if ((send&&timeflag)==1)                    //判断
-  {
-      mySerial.println(ID);     //wifi名称更新程序
-      
-      
-      //delay(1000);
-      //mySerial.println("AT+RST");     //重启
-      //delay(1000);
-      send=0;              //关闭wifi名称更新程序
-      timeflag=0; 
-      //Serial.println(ID);
-  }
-
-//      Serial.print("M:");
-//      Serial.print(minute );
-//      Serial.print("S:");
-//      Serial.print(second );
-//      Serial.print("time:");
-//      Serial.print(timeflag );
-//      Serial.print("temperture:");
-//      Serial.print(send );
-//      Serial.print("RealTemp=");
-//      Serial.print(RealTemp);
-//      Serial.print("MenberTemp=");
-//      Serial.println(MenberTemp);
-  //mySerial.println(ID);
-  //mySerial.println(IDb);
-  //Serial.println(ID);
-  
-  while(mySerial.available()){
+}
+void mqtt_version_post()
+{
+    char param[512];
+    char jsonBuf[1024];
+ 
+    //sprintf(param, "{\"MotionAlarmState\":%d}", digitalRead(13));
+    sprintf(param, "{\"id\": 123,\"params\": {\"version\": \"%s\"}}", DEV_VERSION);
+   // sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param);
+    Serial.println(param);
+    mqttClient.publish(ALINK_TOPIC_DEV_INFO, param);
+}
+void mqtt_check_connect()
+{
+    while (!mqttClient.connected())//mqttδ����
+    {
+        while (connect_aliyun_mqtt(mqttClient, PRODUCT_KEY, DEVICE_NAME, DEVICE_SECRET))
+        {
+            Serial.println("MQTT connect succeed!");
+            //client.subscribe(ALINK_TOPIC_PROP_POSTRSP);
+            mqttClient.subscribe(ALINK_TOPIC_PROP_SET);
+            
+            Serial.println("subscribe done");
+            mqtt_version_post();
+        }
+    }
     
-    Serial.write(mySerial.read());
-     }
-     
-   
-
-  delay(1000);
-
-  }
+}
+ 
+void mqtt_interval_post()
+{
+    char param[512];
+    char jsonBuf[1024];
+ 
+    //sprintf(param, "{\"MotionAlarmState\":%d}", digitalRead(13));
+    sprintf(param, "{\"CurrentHumidity\":%d,\"CurrentTemperature\":12,\"GeoLocation\":{\"CoordinateSystem\":2,\"Latitude\":2,\"Longitude\":123,\"Altitude\":1}}", digitalRead(13));
+    sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param);
+    Serial.println(jsonBuf);
+    mqttClient.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
+}
+ 
+ 
+void setup()
+{
+ 
+    pinMode(SENSOR_PIN, INPUT);
+    /* initialize serial for debugging */
+    Serial.begin(115200);
+ 
+    Serial.println("Demo Start");
+ 
+    init_wifi(WIFI_SSID, WIFI_PASSWD);
+ 
+    mqttClient.setCallback(mqtt_callback);
+}
+ 
+// the loop function runs over and over again forever
+void loop()
+{
+    if (millis() - lastMs >= 20000)
+    {
+        lastMs = millis();
+        mqtt_check_connect();
+        /* Post */        
+        mqtt_interval_post();
+    }
+ 
+    mqttClient.loop();
+ 
+    unsigned int WAIT_MS = 2000;
+    if (digitalRead(SENSOR_PIN) == HIGH)
+    {
+        Serial.println("Motion detected!");
+    }
+    else
+    {
+        Serial.println("Motion absent!");
+    }
+    delay(WAIT_MS); // ms
+    Serial.println(millis() / WAIT_MS);
+}
