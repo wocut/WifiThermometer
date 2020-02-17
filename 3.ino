@@ -7,20 +7,13 @@
 // GPIO 13, D7 on the Node MCU v3
 #define SENSOR_PIN 13
  
-#define WIFI_SSID        "Y"//替换自己的WIFI
-#define WIFI_PASSWD      "123!@#qweASD."//替换自己的WIFI
+#define WIFI_SSID        "${{ secrets.WIFI_SSID }}"//替换自己的WIFI
+#define WIFI_PASSWD      "${{ secrets.WIFI_PASSWD }}"//替换自己的WIFI
 
-/*
- * 
- {
-  "ProductKey": "a1hd3xqyKOS",
-  "DeviceName": "water",
-  "DeviceSecret": "mSfhWRZW19ZjMAs2YJObURKPU9AUwnTl"
-}
- */
-#define PRODUCT_KEY      "a1hd3xqyKOS" //替换自己的PRODUCT_KEY
-#define DEVICE_NAME      "water" //替换自己的DEVICE_NAME
-#define DEVICE_SECRET    "mSfhWRZW19ZjMAs2YJObURKPU9AUwnTl"//替换自己的DEVICE_SECRET
+
+#define PRODUCT_KEY      "${{ secrets.SuperSecret }}" //替换自己的PRODUCT_KEY
+#define DEVICE_NAME      "${{ secrets.SuperSecret }}" //替换自己的DEVICE_NAME
+#define DEVICE_SECRET    "${{ secrets.SuperSecret }}"//替换自己的DEVICE_SECRET
  
  
 #define DEV_VERSION       "S-TH-WIFI-v1.0-20190220"        //固件版本信息
