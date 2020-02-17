@@ -33,11 +33,11 @@ Update 3.ino
 13
 
 14
-#define PRODUCT_KEY      "${{ secrets.SuperSecret }}" //替换自己的PRODUCT_KEY
+#define PRODUCT_KEY      "${{ secrets.PRODUCY_KEY }}" //替换自己的PRODUCT_KEY
 15
-#define DEVICE_NAME      "${{ secrets.SuperSecret }}" //替换自己的DEVICE_NAME
+#define DEVICE_NAME      "${{ secrets.DEVICE_NAME }}" //替换自己的DEVICE_NAME
 16
-#define DEVICE_SECRET    "${{ secrets.SuperSecret }}"//替换自己的DEVICE_SECRET
+#define DEVICE_SECRET    "${{ secrets.DEVICE_SECRET }}"//替换自己的DEVICE_SECRET
 @wocut
 Add files via upload
 10 minutes ago
