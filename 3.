@@ -1,0 +1,303 @@
+#include <ESP8266WiFi.h>
+2
+#include <PubSubClient.h>
+3
+#include <ArduinoJson.h>
+4
+
+5
+#include "aliyun_mqtt.h"
+6
+
+7
+// GPIO 13, D7 on the Node MCU v3
+8
+#define SENSOR_PIN 13
+9
+
+@wocut
+Update 3.ino
+5 minutes ago
+10
+#define WIFI_SSID        "${{ secrets.WIFI_SSID }}"//替换自己的WIFI
+11
+#define WIFI_PASSWD      "${{ secrets.WIFI_PASSWD }}"//替换自己的WIFI
+@wocut
+Add files via upload
+10 minutes ago
+12
+
+@wocut
+Update 3.ino
+5 minutes ago
+13
+
+14
+#define PRODUCT_KEY      "${{ secrets.SuperSecret }}" //替换自己的PRODUCT_KEY
+15
+#define DEVICE_NAME      "${{ secrets.SuperSecret }}" //替换自己的DEVICE_NAME
+16
+#define DEVICE_SECRET    "${{ secrets.SuperSecret }}"//替换自己的DEVICE_SECRET
+@wocut
+Add files via upload
+10 minutes ago
+17
+
+18
+
+19
+#define DEV_VERSION       "S-TH-WIFI-v1.0-20190220"        //固件版本信息
+20
+
+21
+#define ALINK_BODY_FORMAT         "{\"id\":\"123\",\"version\":\"1.0\",\"method\":\"%s\",\"params\":%s}"
+22
+#define ALINK_TOPIC_PROP_POST     "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/event/property/post"
+23
+#define ALINK_TOPIC_PROP_POSTRSP  "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/event/property/post_reply"
+24
+#define ALINK_TOPIC_PROP_SET      "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/service/property/set"
+25
+#define ALINK_METHOD_PROP_POST    "thing.event.property.post"
+26
+#define ALINK_TOPIC_DEV_INFO      "/ota/device/inform/" PRODUCT_KEY "/" DEVICE_NAME ""    
+27
+#define ALINK_VERSION_FROMA      "{\"id\": 123,\"params\": {\"version\": \"%s\"}}"
+28
+unsigned long lastMs = 0;
+29
+
+30
+WiFiClient   espClient;
+31
+PubSubClient mqttClient(espClient);
+32
+
+33
+void init_wifi(const char *ssid, const char *password)
+34
+{
+35
+    WiFi.mode(WIFI_STA);
+36
+    WiFi.begin(ssid, password);
+37
+    while (WiFi.status() != WL_CONNECTED)
+38
+    {
+39
+        Serial.println("WiFi does not connect, try again ...");
+40
+        delay(500);
+41
+    }
+42
+
+43
+    Serial.println("Wifi is connected.");
+44
+    Serial.println("IP address: ");
+45
+    Serial.println(WiFi.localIP());
+46
+}
+47
+
+48
+void mqtt_callback(char *topic, byte *payload, unsigned int length)
+49
+{
+50
+    Serial.print("Message arrived [");
+51
+    Serial.print(topic);
+52
+    Serial.print("] ");
+53
+    payload[length] = '\0';
+54
+    Serial.println((char *)payload);
+55
+
+56
+    if (strstr(topic, ALINK_TOPIC_PROP_SET))
+57
+    {
+58
+        StaticJsonBuffer<100> jsonBuffer;
+59
+        JsonObject &root = jsonBuffer.parseObject(payload);
+60
+        if (!root.success())
+61
+        {
+62
+            Serial.println("parseObject() failed");
+63
+            return;
+64
+        }
+65
+    }
+66
+}
+67
+void mqtt_version_post()
+68
+{
+69
+    char param[512];
+70
+    char jsonBuf[1024];
+71
+
+72
+    //sprintf(param, "{\"MotionAlarmState\":%d}", digitalRead(13));
+73
+    sprintf(param, "{\"id\": 123,\"params\": {\"version\": \"%s\"}}", DEV_VERSION);
+74
+   // sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param);
+75
+    Serial.println(param);
+76
+    mqttClient.publish(ALINK_TOPIC_DEV_INFO, param);
+77
+}
+78
+void mqtt_check_connect()
+79
+{
+80
+    while (!mqttClient.connected())//mqttδ����
+81
+    {
+82
+        while (connect_aliyun_mqtt(mqttClient, PRODUCT_KEY, DEVICE_NAME, DEVICE_SECRET))
+83
+        {
+84
+            Serial.println("MQTT connect succeed!");
+85
+            //client.subscribe(ALINK_TOPIC_PROP_POSTRSP);
+86
+            mqttClient.subscribe(ALINK_TOPIC_PROP_SET);
+87
+
+88
+            Serial.println("subscribe done");
+89
+            mqtt_version_post();
+90
+        }
+91
+    }
+92
+
+93
+}
+94
+
+95
+void mqtt_interval_post()
+96
+{
+97
+    char param[512];
+98
+    char jsonBuf[1024];
+99
+
+100
+    //sprintf(param, "{\"MotionAlarmState\":%d}", digitalRead(13));
+101
+    sprintf(param, "{\"CurrentHumidity\":%d,\"CurrentTemperature\":12,\"GeoLocation\":{\"CoordinateSystem\":2,\"Latitude\":2,\"Longitude\":123,\"Altitude\":1}}", digitalRead(13));
+102
+    sprintf(jsonBuf, ALINK_BODY_FORMAT, ALINK_METHOD_PROP_POST, param);
+103
+    Serial.println(jsonBuf);
+104
+    mqttClient.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
+105
+}
+106
+
+107
+
+108
+void setup()
+109
+{
+110
+
+111
+    pinMode(SENSOR_PIN, INPUT);
+112
+    /* initialize serial for debugging */
+113
+    Serial.begin(115200);
+114
+
+115
+    Serial.println("Demo Start");
+116
+
+117
+    init_wifi(WIFI_SSID, WIFI_PASSWD);
+118
+
+119
+    mqttClient.setCallback(mqtt_callback);
+120
+}
+121
+
+122
+// the loop function runs over and over again forever
+123
+void loop()
+124
+{
+125
+    if (millis() - lastMs >= 20000)
+126
+    {
+127
+        lastMs = millis();
+128
+        mqtt_check_connect();
+129
+        /* Post */        
+130
+        mqtt_interval_post();
+131
+    }
+132
+
+133
+    mqttClient.loop();
+134
+
+135
+    unsigned int WAIT_MS = 2000;
+136
+    if (digitalRead(SENSOR_PIN) == HIGH)
+137
+    {
+138
+        Serial.println("Motion detected!");
+139
+    }
+140
+    else
+141
+    {
+142
+        Serial.println("Motion absent!");
+143
+    }
+144
+    delay(WAIT_MS); // ms
+145
+    Serial.println(millis() / WAIT_MS);
+146
+}
