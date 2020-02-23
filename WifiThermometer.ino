@@ -3,6 +3,10 @@
 //12,OK,print加ln可以通过
 //13  取自然数
 //14  定义函数
+/*
+ * 17
+ * 18 把代码优化了一下
+ */
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <SoftwareSerial.h>
@@ -18,6 +22,7 @@ int second=0,minute=0;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
   SoftwareSerial mySerial(10, 11); // RX, TX ESP8266就连在这个上面
+
 
 void setup(void)
 {
@@ -36,15 +41,36 @@ void setup(void)
   delay(500);
   sensors.begin(); // 初始库
   }
-    int MenberTemp=-100;
+
+
+
+
+
+
 void loop(void)
 { 
+   second++;
+  if (second>=60)
+    {
+      second=0;
+      minute++;
+    }
+  if (minute>2)    //定时2分钟
+    {
+      timeflag=1;
+      minute=0;
+    }
 
-   sensors.requestTemperatures(); // 发送命令获取温度
-   float RealTemp=sensors.getTempCByIndex(0);
+
+  if ((send&&timeflag)==1)                    //判断
+  {
+      
+     sensors.requestTemperatures(); // 发送命令获取温度
+   int RealTemp=sensors.getTempCByIndex(0);
+   //int RealTemp=25;
   String IDa ="AT+CWSAP=\"";
   int IDb;
-
+  int MenberTemp=-100;
   if (abs(RealTemp-MenberTemp)>1)    //如果温度比之前相差超过2度
       {
        IDb=RealTemp;       //更新温度
@@ -62,21 +88,8 @@ void loop(void)
   String IDc ="c\",\"12312312\",11,0";
   //String IDc ="c\"";
   String ID=IDa+IDb+IDc;
-   //String ID="AT+CWSAP=\"baidc\",\"12K456u8\",11,3";   //临时试验新UNO
-  second++;
-  if (second>=60)
-    {
-      second=0;
-      minute++;
-    }
-  if (minute>2)    //定时2分钟
-    {
-      timeflag=1;
-      minute=0;
-    }
+   //String ID="AT+CWSAP=\"baidc\",\"12K456u8\",11,3";   //临时试验新UNO 
 
-  if ((send&&timeflag)==1)                    //判断
-  {
       mySerial.println(ID);     //wifi名称更新程序
       
       
@@ -85,6 +98,8 @@ void loop(void)
       //delay(1000);
       send=0;              //关闭wifi名称更新程序
       timeflag=0; 
+ 
+      
       //Serial.println(ID);
   }
 
@@ -100,17 +115,17 @@ void loop(void)
 //      Serial.print(RealTemp);
 //      Serial.print("MenberTemp=");
 //      Serial.println(MenberTemp);
-  //mySerial.println(ID);
-  //mySerial.println(IDb);
-  //Serial.println(ID);
-  
-  while(mySerial.available()){
-    
+//  mySerial.println(ID);
+//  mySerial.println(IDb);
+//  Serial.println(ID);
+
+/*
+ * 串口打印程序
+ while(mySerial.available()){
     Serial.write(mySerial.read());
      }
-     
-   
-
   delay(1000);
-
   }
+ */
+  
+}
